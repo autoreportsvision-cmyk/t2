@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Bot, Loader, Send } from 'lucide-react';
 import { useAppContext } from '@/context/app-context';
-import { getChatResponse } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import type { Message } from '@/lib/types';
 
@@ -50,23 +49,40 @@ export default function ChatInteraction() {
     setInput('');
     setLoading(true);
 
-    const result = await getChatResponse({
-      message: currentInput,
-      processData: JSON.stringify(calculatedData, null, 2),
-    });
+    try {
+        const response = await fetch('/api/ai/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                message: currentInput,
+                processData: JSON.stringify(calculatedData, null, 2),
+            }),
+        });
 
-    setLoading(false);
+        const result = await response.json();
 
-    if (result.success && result.data) {
-      setMessages(prev => [...prev, { role: 'model', content: result.data }]);
-    } else {
-      toast({
-        variant: 'destructive',
-        title: 'Erro na IA',
-        description: result.error || 'Não foi possível obter uma resposta.',
-      });
-       // If the call fails, remove the user's message to allow them to try again
-       setMessages(prev => prev.slice(0, -1));
+        if (result.success && result.data) {
+            setMessages(prev => [...prev, { role: 'model', content: result.data }]);
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Erro na IA',
+                description: result.error || 'Não foi possível obter uma resposta.',
+            });
+            // If the call fails, remove the user's message to allow them to try again
+            setMessages(prev => prev.slice(0, -1));
+        }
+    } catch (error) {
+        toast({
+            variant: 'destructive',
+            title: 'Erro de Rede',
+            description: 'Não foi possível conectar ao servidor de IA.',
+        });
+         setMessages(prev => prev.slice(0, -1));
+    } finally {
+        setLoading(false);
     }
   };
 

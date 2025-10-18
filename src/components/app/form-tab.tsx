@@ -18,7 +18,6 @@ import { useAppContext } from '@/context/app-context';
 import { EvaporationData, formSchema, UserProfile } from '@/lib/types';
 import { performCalculations } from '@/lib/calculations';
 import { useToast } from '@/hooks/use-toast';
-import { getPremiumTeaser } from '@/app/actions';
 import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
@@ -73,19 +72,30 @@ export default function FormTab({ onCalculate }: FormTabProps) {
 
       // Se for usuário básico, gera e mostra o teaser.
       if (userProfile?.role === 'basic') {
-        const teaserResult = await getPremiumTeaser({ effectsSummary: results.effectsSummary });
-        if (teaserResult.success && teaserResult.data) {
-          toast({
-            duration: 15000, // Show for longer
-            title: "💎 Análise Premium Desbloqueada (Prévia)",
-            description: teaserResult.data,
-            action: (
-              <Button variant="secondary" size="sm" onClick={() => router.push('/pricing')}>
-                <Gem className="mr-2 h-4 w-4" />
-                Ver Planos
-              </Button>
-            ),
-          });
+        try {
+            const response = await fetch('/api/ai/teaser', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ effectsSummary: results.effectsSummary })
+            });
+            const teaserResult = await response.json();
+            
+            if (teaserResult.success && teaserResult.data) {
+                toast({
+                    duration: 15000, // Show for longer
+                    title: "💎 Análise Premium Desbloqueada (Prévia)",
+                    description: teaserResult.data,
+                    action: (
+                    <Button variant="secondary" size="sm" onClick={() => router.push('/pricing')}>
+                        <Gem className="mr-2 h-4 w-4" />
+                        Ver Planos
+                    </Button>
+                    ),
+                });
+            }
+        } catch (error) {
+            // Silently fail if teaser generation fails
+            console.warn('Could not generate premium teaser', error);
         }
       }
 

@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAppContext } from '@/context/app-context';
 import { Bot, Loader } from 'lucide-react';
-import { getAiEvaluations } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import WhatsAppIcon from '@/components/icons/whatsapp-icon';
 import { Textarea } from '../ui/textarea';
@@ -57,26 +56,43 @@ export default function EvaluationsTab() {
 
     setLoading(true);
     setAiEvaluations(null);
+    
+    try {
+        const response = await fetch('/api/ai/evaluations', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                effects: calculatedData.effects,
+                overallSummary: calculatedData.overallSummary,
+                prompt: prompt,
+            }),
+        });
 
-    const result = await getAiEvaluations({
-      effects: calculatedData.effects,
-      overallSummary: calculatedData.overallSummary,
-      prompt: prompt,
-    });
-    setLoading(false);
+        const result = await response.json();
 
-    if (result.success && result.data) {
-      setAiEvaluations({ generalEvaluation: result.data });
-      toast({
-        title: "Sucesso",
-        description: "Avaliação geral gerada com IA.",
-      });
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Erro de IA",
-        description: result.error,
-      });
+        if (result.success && result.data) {
+          setAiEvaluations({ generalEvaluation: result.data });
+          toast({
+            title: "Sucesso",
+            description: "Avaliação geral gerada com IA.",
+          });
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Erro de IA",
+            description: result.error,
+          });
+        }
+    } catch (error) {
+         toast({
+            variant: "destructive",
+            title: "Erro de Rede",
+            description: "Não foi possível conectar ao servidor de IA.",
+        });
+    } finally {
+        setLoading(false);
     }
   };
   
