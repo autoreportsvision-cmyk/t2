@@ -1,16 +1,11 @@
 
 import Stripe from 'stripe';
 
-const stripeApiKey = process.env.STRIPE_API_KEY;
-
-if (!stripeApiKey) {
-  // Isso garante que o servidor falhe de forma explícita durante a inicialização
-  // se a chave da API não estiver definida, em vez de causar um erro silencioso
-  // que resulta em uma página em branco.
-  throw new Error("FATAL: A variável de ambiente STRIPE_API_KEY não está definida. O servidor não pode iniciar.");
-}
-
-export const stripe = new Stripe(stripeApiKey, {
+// A chave da API do Stripe é lida diretamente da variável de ambiente.
+// É crucial que a variável STRIPE_API_KEY esteja configurada como um "secret" no backend do Firebase App Hosting.
+// A verificação de existência foi removida daqui para não quebrar o processo de 'build',
+// pois a variável só é necessária em tempo de execução.
+export const stripe = new Stripe(process.env.STRIPE_API_KEY!, {
   apiVersion: '2024-06-20',
   typescript: true,
 });
